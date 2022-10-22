@@ -7,6 +7,7 @@ import com.example.advanced.controller.response.MemberResponseDto;
 import com.example.advanced.controller.response.ResponseDto;
 import com.example.advanced.domain.Member;
 import com.example.advanced.domain.RefreshToken;
+import com.example.advanced.domain.UserDetailsImpl;
 import com.example.advanced.jwt.TokenProvider;
 import com.example.advanced.repository.MemberRepository;
 import java.util.Optional;
@@ -91,14 +92,13 @@ public class MemberService {
     if (!tokenProvider.validateToken(request.getHeader("Refresh-Token"))) {
       return ResponseDto.fail("INVALID_TOKEN", "refresh token is invalid");
     }
-    Member member = tokenProvider.getMemberFromAuthentication();
-    if (null == member) {
-      return ResponseDto.fail("MEMBER_NOT_FOUND",
-          "member not found");
-    }
 
-    Authentication authentication = tokenProvider.getAuthentication(request.getHeader("Authorization").substring(7));
+
+    Authentication authentication = tokenProvider.getAuthentication(request.getHeader("Access_Token"));
+    Member member = ((UserDetailsImpl) authentication.getPrincipal()).getMember();
     RefreshToken refreshToken = tokenProvider.isPresentRefreshToken(member);
+
+
 
     if (!refreshToken.getValue().equals(request.getHeader("Refresh-Token"))) {
       return ResponseDto.fail("INVALID_TOKEN", "refresh token is invalid");

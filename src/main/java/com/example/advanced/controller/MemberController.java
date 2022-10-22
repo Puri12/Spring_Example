@@ -41,7 +41,7 @@ public class MemberController {
                   paramType = "header"
           )
   })
-  @RequestMapping(value = "/api/auth/member/reissue", method = RequestMethod.POST)
+  @RequestMapping(value = "/api/member/reissue", method = RequestMethod.POST)
   public ResponseDto<?> reissue(HttpServletRequest request, HttpServletResponse response) {
     return memberService.reissue(request, response);
   }
