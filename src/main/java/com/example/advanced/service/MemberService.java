@@ -120,7 +120,7 @@ public class MemberService {
           "member not found");
     }
 
-    return tokenProvider.deleteRefreshToken(member);
+    return ResponseDto.success(tokenProvider.deleteRefreshToken(member));
   }
 
   @Transactional(readOnly = true)
