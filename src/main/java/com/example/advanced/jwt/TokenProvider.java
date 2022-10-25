@@ -7,6 +7,7 @@ import com.example.advanced.domain.RefreshToken;
 import com.example.advanced.domain.UserDetailsImpl;
 import com.example.advanced.repository.RefreshTokenRepository;
 import com.example.advanced.service.UserDetailsServiceImpl;
+import com.example.advanced.shared.Authority;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -21,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -53,30 +53,23 @@ public class TokenProvider {
     this.key = Keys.hmacShaKeyFor(keyBytes);
   }
 
-  public TokenDto generateTokenDto(Authentication authentication) {
-    String authorities = authentication.getAuthorities().stream()
-        .map(GrantedAuthority::getAuthority)
-        .collect(Collectors.joining(","));
-
+    public TokenDto generateTokenDto(Member member) {
     long now = (new Date().getTime());
 
     Date accessTokenExpiresIn = new Date(now + ACCESS_TOKEN_EXPIRE_TIME);
     String accessToken = Jwts.builder()
-        .setSubject(authentication.getName())
-        .claim(AUTHORITIES_KEY, authorities)
+        .setSubject(member.getNickname())
+        .claim(AUTHORITIES_KEY, Authority.ROLE_USER)
         .setExpiration(accessTokenExpiresIn)
         .signWith(key, SignatureAlgorithm.HS256)
         .compact();
 
     String refreshToken = Jwts.builder()
-        .setSubject(authentication.getName())
-        .claim(AUTHORITIES_KEY, authorities)
+        .setSubject(member.getNickname())
+        .claim(AUTHORITIES_KEY, Authority.ROLE_USER)
         .setExpiration(new Date(now + REFRESH_TOKEN_EXPRIRE_TIME))
         .signWith(key, SignatureAlgorithm.HS256)
         .compact();
-
-    Member member = ((UserDetailsImpl) authentication.getPrincipal()).getMember();
-
     RefreshToken refreshTokenObject = RefreshToken.builder()
         .id(member.getId())
         .member(member)

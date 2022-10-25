@@ -13,6 +13,8 @@ import com.example.advanced.repository.MemberRepository;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.example.advanced.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -29,9 +31,9 @@ public class MemberService {
   @Autowired
   private final MemberRepository memberRepository;
   @Autowired
-  private final PasswordEncoder passwordEncoder;
+  private final RefreshTokenRepository refreshTokenRepository;
   @Autowired
-  private final AuthenticationManagerBuilder authenticationManagerBuilder;
+  private final PasswordEncoder passwordEncoder;
   @Autowired
   private final TokenProvider tokenProvider;
 
@@ -70,11 +72,7 @@ public class MemberService {
           "member not found");
     }
 
-    UsernamePasswordAuthenticationToken authenticationToken =
-        new UsernamePasswordAuthenticationToken(requestDto.getNickname(), requestDto.getPassword());
-    Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
-
-    TokenDto tokenDto = tokenProvider.generateTokenDto(authentication);
+    TokenDto tokenDto = tokenProvider.generateTokenDto(member);
     tokenToHeaders(tokenDto, response);
 
     return ResponseDto.success(
@@ -92,20 +90,18 @@ public class MemberService {
     if (!tokenProvider.validateToken(request.getHeader("Refresh-Token"))) {
       return ResponseDto.fail("INVALID_TOKEN", "refresh token is invalid");
     }
-    Authentication authentication = tokenProvider.getAuthentication(request.getHeader("Refresh-Token"));
-    Member member = ((UserDetailsImpl) authentication.getPrincipal()).getMember();
-    RefreshToken refreshToken = tokenProvider.isPresentRefreshToken(member);
 
-
-
-    if (!refreshToken.getValue().equals(request.getHeader("Refresh-Token"))) {
-      return ResponseDto.fail("INVALID_TOKEN", "refresh token is invalid");
-    }
-
-    TokenDto tokenDto = tokenProvider.generateTokenDto(authentication);
-    refreshToken.updateValue(tokenDto.getRefreshToken());
+    Member member = refreshTokenRepository.findByValue(request.getHeader("Refresh-Token")).get().getMember();
+    TokenDto tokenDto = tokenProvider.generateTokenDto(member);
     tokenToHeaders(tokenDto, response);
-    return ResponseDto.success("success");
+    return ResponseDto.success(
+        MemberResponseDto.builder()
+            .id(member.getId())
+            .nickname(member.getNickname())
+            .createdAt(member.getCreatedAt())
+            .modifiedAt(member.getModifiedAt())
+            .build()
+    );
   }
   @Transactional
   public ResponseDto<?> logout(HttpServletRequest request) {
