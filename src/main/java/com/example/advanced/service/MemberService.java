@@ -92,9 +92,7 @@ public class MemberService {
     if (!tokenProvider.validateToken(request.getHeader("Refresh-Token"))) {
       return ResponseDto.fail("INVALID_TOKEN", "refresh token is invalid");
     }
-
-
-    Authentication authentication = tokenProvider.getAuthentication(request.getHeader("Access_Token"));
+    Authentication authentication = tokenProvider.getAuthentication(request.getHeader("Refresh-Token"));
     Member member = ((UserDetailsImpl) authentication.getPrincipal()).getMember();
     RefreshToken refreshToken = tokenProvider.isPresentRefreshToken(member);
 
